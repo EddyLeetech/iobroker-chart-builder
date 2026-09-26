@@ -4,7 +4,7 @@ Eine Weboberfläche, mit der du Charts für das **Materialdesign-Widget „JSON 
 
 Du wählst Datenpunkte aus, stellst X- und Y-Achse ein, siehst sofort eine Vorschau mit echten Daten und legst mit einem Klick ein JavaScript in ioBroker an. Das Skript schreibt das fertige Chart-JSON in einen Datenpunkt, den du im Widget einträgst. Änderungen am Chart machst du später wieder im Chart-Builder – in vis musst du nichts anfassen.
 
-<!-- Screenshot einfügen: ![Chart-Builder](docs/screenshot.png) -->
+![Chart-Builder](docs/screenshot.png)
 
 ## Funktionen
 
