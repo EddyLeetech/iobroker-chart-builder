@@ -1,0 +1,1019 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ioBroker Chart-Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EDF0F3;--surface:#FFFFFF;--surface-2:#F5F7F9;--ink:#15212B;--muted:#5A6977;--line:#D7DEE5;
+  --accent:#1B7A8E;--accent-ink:#FFFFFF;--accent-soft:#DDEEF1;--warn:#9A5B06;--warn-soft:#FBEFD9;--code-bg:#F3F6F8;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1419;--surface:#151D24;--surface-2:#1A242C;--ink:#E3E9EE;--muted:#8D9DAA;--line:#26333D;
+    --accent:#4DB3C6;--accent-ink:#06222A;--accent-soft:#15323A;--warn:#E9A94B;--warn-soft:#33270F;--code-bg:#10181E;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1419;--surface:#151D24;--surface-2:#1A242C;--ink:#E3E9EE;--muted:#8D9DAA;--line:#26333D;
+  --accent:#4DB3C6;--accent-ink:#06222A;--accent-soft:#15323A;--warn:#E9A94B;--warn-soft:#33270F;--code-bg:#10181E;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;padding:0 16px 40px}
+.wrap{max-width:1360px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding-block:22px 18px}
+header.top h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+header.top h1 span{color:var(--accent)}
+header.top p{margin:0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:980px){.out{position:static}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel h2{margin:0;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>span{font-size:12px;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+textarea{font-family:var(--mono);font-size:12.5px;resize:vertical;min-height:70px}
+input.mono{font-family:var(--mono);font-size:12.5px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=color]{width:38px;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);flex:none}
+.checks{display:flex;flex-wrap:wrap;gap:6px 16px}
+.checks label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.checks input{accent-color:var(--accent);width:16px;height:16px}
+button{font:inherit;font-weight:500;border-radius:6px;padding:7px 12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:4px 8px}
+button.ghost:hover{color:var(--ink);border-color:var(--line)}
+button.danger{color:var(--warn)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.mode{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.mode label{padding:8px 10px;text-align:center;cursor:pointer;background:var(--surface-2);color:var(--muted);font-weight:500}
+.mode input{position:absolute;opacity:0;pointer-events:none}
+.mode label:has(input:checked){background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.mode label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.series{display:flex;flex-direction:column;gap:10px}
+.s-item{border:1px solid var(--line);border-radius:6px;background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:10px;border-left:4px solid var(--c,var(--accent))}
+.s-head{display:flex;align-items:center;gap:8px}
+.s-head input[type=text]{flex:1}
+.s-item input[type=text],.s-item input[type=number],.s-item select{background:var(--surface)}
+.s-item .row{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--ink);font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.chart-box{position:relative;height:340px;max-width:100%}
+@media (max-width:600px){.chart-box{height:260px}}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:none;background:none;border-radius:0;padding:8px 12px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+pre.code{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:12px;font-family:var(--mono);font-size:12px;line-height:1.55;overflow:auto;max-height:460px;white-space:pre;tab-size:4}
+.warns{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.warns li{background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:6px 10px;font-size:13px}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+code.inline{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;word-break:break-all}
+.toast{font-size:12.5px;color:var(--accent);font-weight:500}
+.toast.err{color:var(--warn)}
+.suggest{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18);max-height:320px;overflow:auto;padding:4px}
+.suggest div{padding:6px 8px;border-radius:4px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.suggest div[aria-selected=true],.suggest div:hover{background:var(--accent-soft)}
+.suggest b{font-family:var(--mono);font-weight:500;font-size:12.5px;word-break:break-all}
+.suggest small{color:var(--muted);font-size:12px}
+.s-status{font-size:12px;color:var(--muted);margin-top:-4px}
+.s-status.ok{color:var(--accent)}
+.s-status.warn{color:var(--warn)}
+.head-right{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <h1>ioBroker <span>Chart-Builder</span></h1>
+  <div class="head-right">
+    <p>Datenpunkte zusammenstellen, Skript erzeugen, im Materialdesign <b>JSON Chart</b> anzeigen.</p>
+    <span class="pill" id="p-conn">Offline</span>
+  </div>
+</header>
+
+<main class="grid">
+<section class="col" aria-label="Konfiguration">
+
+  <div class="panel">
+    <h2>Chart <span class="pill" id="p-saved">Entwurf</span></h2>
+    <div class="row">
+      <label class="field"><span>Name</span><input type="text" id="f-name" data-k="name"></label>
+      <label class="field"><span>History-Instanz</span>
+        <select id="f-instSel" class="mono">
+          <option value="influxdb.0">influxdb.0</option><option value="influxdb.1">influxdb.1</option>
+          <option value="history.0">history.0</option><option value="history.1">history.1</option>
+          <option value="sql.0">sql.0</option><option value="sql.1">sql.1</option>
+          <option value="">andere Instanz …</option>
+        </select>
+      </label>
+      <label class="field" id="inst-custom"><span>Eigene Instanz</span><input type="text" id="f-instance" data-k="instance" class="mono" placeholder="z.B. influxdb.2"></label>
+    </div>
+    <label class="field"><span>Ziel-Datenpunkt (für das Widget)</span><input type="text" id="f-target" data-k="target" class="mono"></label>
+    <div class="checks"><label><input type="checkbox" id="f-targetAuto" data-k="targetAuto"> Aus dem Namen ableiten</label></div>
+    <div class="field"><span>Datenquelle</span>
+      <div class="mode" role="radiogroup">
+        <label><input type="radio" name="mode" value="history" id="f-mode-h"> Zeitverlauf (History)</label>
+        <label><input type="radio" name="mode" value="current" id="f-mode-c"> Aktuelle Werte</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="x-panel">
+    <h2>X-Achse · Zeit <span class="pill" id="p-points"></span></h2>
+    <div class="row">
+      <label class="field"><span>Zeitraum</span><select id="f-rangeH" data-k="rangeH" data-num></select></label>
+      <label class="field"><span>Intervall je Punkt</span><select id="f-stepMin" data-k="stepMin" data-num></select></label>
+    </div>
+    <div class="row">
+      <label class="field"><span>Zusammenfassung</span><select id="f-aggregate" data-k="aggregate"></select></label>
+      <label class="field"><span>Beschriftung</span><select id="f-labelFmt" data-k="labelFmt"></select></label>
+    </div>
+    <div class="checks"><label><input type="checkbox" id="f-fillGaps" data-k="fillGaps"> Lücken mit letztem Wert füllen</label></div>
+  </div>
+  <div class="panel" id="x-panel-cur" hidden>
+    <h2>X-Achse · Datenpunkte</h2>
+    <p class="hint">Jede Datenreihe wird ein Balken mit ihrem aktuellen Wert. Das Chart aktualisiert sich bei jeder Wertänderung.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Datenreihen · Y-Werte <span class="pill" id="p-series"></span></h2>
+    <div class="series" id="series"></div>
+    <div class="btns"><button type="button" id="b-add">+ Datenreihe</button></div>
+    <details>
+      <summary class="hint" style="cursor:pointer">Mehrere Datenpunkt-IDs auf einmal einfügen</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <textarea id="f-bulk" placeholder="eine ID pro Zeile, z.B. aus dem Objekte-Tab kopiert"></textarea>
+        <div class="btns"><button type="button" id="b-bulk">Als Datenreihen übernehmen</button></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <h2>Y-Achsen</h2>
+    <div class="row">
+      <label class="field"><span>Links · Titel</span><input type="text" id="f-al-title" data-k="axes.left.title"></label>
+      <label class="field"><span>Einheit</span><input type="text" id="f-al-unit" data-k="axes.left.unit" placeholder="automatisch"></label>
+      <label class="field"><span>Min</span><input type="number" id="f-al-min" data-k="axes.left.min" placeholder="auto"></label>
+      <label class="field"><span>Max</span><input type="number" id="f-al-max" data-k="axes.left.max" placeholder="auto"></label>
+    </div>
+    <div class="row">
+      <label class="field"><span>Rechts · Titel</span><input type="text" id="f-ar-title" data-k="axes.right.title"></label>
+      <label class="field"><span>Einheit</span><input type="text" id="f-ar-unit" data-k="axes.right.unit" placeholder="automatisch"></label>
+      <label class="field"><span>Min</span><input type="number" id="f-ar-min" data-k="axes.right.min" placeholder="auto"></label>
+      <label class="field"><span>Max</span><input type="number" id="f-ar-max" data-k="axes.right.max" placeholder="auto"></label>
+    </div>
+    <div class="row">
+      <label class="field"><span>Farbe der Beschriftung</span>
+        <select id="f-axisColorMode" data-k="axisColorMode"><option value="series">wie die Datenreihe</option><option value="custom">eigene Farbe</option></select></label>
+      <label class="field" id="axc-field"><span>Beschriftung</span><input type="color" id="f-axisColor" data-k="axisColor"></label>
+      <label class="field"><span>Gitterlinien</span><input type="color" id="f-gridColor" data-k="gridColor"></label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Optionen</h2>
+    <div class="row">
+      <label class="field" id="upd-field"><span>Aktualisieren</span><select id="f-updateMin" data-k="updateMin" data-num></select></label>
+    </div>
+    <div class="checks">
+      <label id="log-check"><input type="checkbox" id="f-enableLog" data-k="enableLog"> Logging für Datenpunkte automatisch aktivieren</label>
+      <label><input type="checkbox" id="f-datalabels" data-k="datalabels"> Werte am Punkt anzeigen</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Gespeicherte Charts</h2>
+    <div id="remote-box" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div class="row"><label class="field"><span>Charts in ioBroker (script.js.ChartBuilder)</span><select id="f-remoteList"></select></label></div>
+      <div class="btns"><button type="button" id="b-remoteLoad">Aus ioBroker laden</button><span class="toast" id="t-remote" aria-live="polite"></span></div>
+    </div>
+    <div class="row">
+      <label class="field"><span>Auswahl</span><select id="f-savedList"></select></label>
+    </div>
+    <div class="btns">
+      <button type="button" class="primary" id="b-save">Speichern</button>
+      <button type="button" id="b-load">Laden</button>
+      <button type="button" id="b-new">Neues Chart</button>
+      <button type="button" class="danger" id="b-del">Löschen</button>
+      <span class="toast" id="t-saved" aria-live="polite"></span>
+    </div>
+    <p class="hint">Gespeichert wird nur in diesem Browser. Die komplette Konfiguration steckt außerdem im erzeugten Skript und lässt sich von dort wieder einlesen.</p>
+    <details>
+      <summary class="hint" style="cursor:pointer">Aus vorhandenem Skript einlesen</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <textarea id="f-import" placeholder="Erzeugtes Skript hier einfügen"></textarea>
+        <div class="btns"><button type="button" id="b-import">Einlesen</button><span class="toast" id="t-import" aria-live="polite"></span></div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section class="col out" aria-label="Ergebnis">
+  <div class="panel">
+    <h2>Vorschau <span class="pill" id="p-data">mit Beispieldaten</span></h2>
+    <p class="hint" id="data-err" hidden></p>
+    <div class="chart-box"><canvas id="chart" aria-label="Chart-Vorschau"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-tab="script">Skript</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="json">JSON im Datenpunkt</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="howto">Einbinden</button>
+    </div>
+    <div data-pane="script" style="display:flex;flex-direction:column;gap:10px">
+      <ul class="warns" id="warns"></ul>
+      <div class="btns" id="create-box" hidden>
+        <button type="button" class="primary" id="b-create">In ioBroker anlegen</button>
+        <span class="checks"><label><input type="checkbox" id="f-autostart" checked> sofort starten</label></span>
+        <span class="toast" id="t-create" aria-live="polite"></span>
+      </div>
+      <div class="btns"><button type="button" class="primary" id="b-copy">Skript kopieren</button><span class="toast" id="t-copy" aria-live="polite"></span></div>
+      <pre class="code" id="code" tabindex="0"></pre>
+    </div>
+    <div data-pane="json" hidden style="display:flex;flex-direction:column;gap:10px">
+      <p class="hint" id="json-hint">So sieht der Inhalt des Ziel-Datenpunkts aus. Hier mit Beispieldaten, das Skript füllt echte Werte ein.</p>
+      <pre class="code" id="json" tabindex="0"></pre>
+    </div>
+    <div data-pane="howto" hidden>
+      <ol class="steps" id="howto"></ol>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const PALETTE = ['#2F7FD1','#E0752D','#2E9E6A','#C0467A','#7A5CC7','#B8962E','#3AA7B8','#8A6B52'];
+const RANGES = [[1,'1 Stunde'],[3,'3 Stunden'],[6,'6 Stunden'],[12,'12 Stunden'],[24,'24 Stunden'],[48,'2 Tage'],[168,'7 Tage'],[720,'30 Tage'],[2160,'90 Tage'],[8760,'1 Jahr']];
+const STEPS = [[1,'1 Minute'],[5,'5 Minuten'],[10,'10 Minuten'],[15,'15 Minuten'],[30,'30 Minuten'],[60,'1 Stunde'],[180,'3 Stunden'],[360,'6 Stunden'],[1440,'1 Tag'],[10080,'1 Woche']];
+const FORMATS = [['HH:mm','14:30'],['ddd HH:mm','Mo 14:30'],['dd.MM. HH:mm','26.09. 14:30'],['dd.MM.','26.09.'],['ddd','Mo'],['ddd dd.MM.','Mo 26.09.'],['MM.yyyy','09.2026']];
+const AGGS = [['average','Mittelwert'],['max','Maximum'],['min','Minimum'],['total','Summe'],['delta','Verbrauch aus Zählerstand']];
+const UPDATES = [[1,'jede Minute','* * * * *'],[5,'alle 5 Minuten','*/5 * * * *'],[15,'alle 15 Minuten','*/15 * * * *'],[30,'alle 30 Minuten','*/30 * * * *'],[60,'stündlich','0 * * * *']];
+const WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+function newSeries(i, id){
+  return {id:id||'',label:'',type:'line',axis:'left',unit:'',color:PALETTE[i%PALETTE.length],decimals:1,factor:1,fill:false,smooth:true,stepped:false,stack:false};
+}
+function blank(){
+  return {name:'Neues Chart',target:'0_userdata.0.charts.neues_chart',targetAuto:true,mode:'history',instance:'history.0',
+    rangeH:24,stepMin:60,aggregate:'average',labelFmt:'HH:mm',fillGaps:true,updateMin:5,enableLog:true,datalabels:false,
+    axisColorMode:'custom',axisColor:'#78858F',gridColor:'#E3E7EB',
+    axes:{left:{title:'',unit:'',min:'',max:''},right:{title:'',unit:'',min:'',max:''}},series:[newSeries(0)]};
+}
+const EXAMPLE = Object.assign(blank(), {
+  name:'Wohnzimmer Klima', target:'0_userdata.0.charts.wohnzimmer_klima', instance:'influxdb.0',
+  axes:{left:{title:'Temperatur',min:'',max:''},right:{title:'Luftfeuchte',min:'0',max:'100'}},
+  series:[
+    Object.assign(newSeries(0,'hm-rpc.0.000A1B2C3D4E5F.1.ACTUAL_TEMPERATURE'),{label:'Temperatur',unit:'°C',fill:true}),
+    Object.assign(newSeries(1,'hm-rpc.0.000A1B2C3D4E5F.1.HUMIDITY'),{label:'Luftfeuchte',unit:'%',axis:'right',decimals:0})
+  ]
+});
+
+// ---------- storage ----------
+const KEY_DRAFT='iobcb.draft', KEY_SAVED='iobcb.saved';
+function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function normalize(c){
+  const b=blank(); const out=Object.assign(b,c||{});
+  out.axes={left:Object.assign({title:'',unit:'',min:'',max:''},(c&&c.axes&&c.axes.left)||{}),right:Object.assign({title:'',unit:'',min:'',max:''},(c&&c.axes&&c.axes.right)||{})};
+  out.series=((c&&c.series)||[]).map((s,i)=>Object.assign(newSeries(i),s));
+  if(!out.series.length) out.series=[newSeries(0)];
+  return out;
+}
+let cfg = normalize(lsGet(KEY_DRAFT) || JSON.parse(JSON.stringify(EXAMPLE)));
+
+// ---------- helpers ----------
+function slug(s){return String(s).toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'chart'}
+function labelOf(s){ if(s.label&&s.label.trim()) return s.label.trim(); const p=(s.id||'').split('.').filter(Boolean); return p.length?p[p.length-1]:'Datenreihe'; }
+function dec(s){const d=parseInt(s.decimals,10);return isFinite(d)&&d>=0?Math.min(d,6):1}
+function fac(s){const f=parseFloat(s.factor);return isFinite(f)?f:1}
+function rgba(hex,a){const h=hex.replace('#','');const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'}
+function fmt(ts,p){const d=new Date(ts),z=n=>String(n).padStart(2,'0');const parts={yyyy:d.getFullYear(),ddd:WEEKDAYS[d.getDay()],dd:z(d.getDate()),MM:z(d.getMonth()+1),HH:z(d.getHours()),mm:z(d.getMinutes())};return p.replace(/yyyy|ddd|dd|MM|HH|mm/g,t=>parts[t])}
+function round(v,d){const f=Math.pow(10,d);return Math.round(v*f)/f}
+function pointCount(c){return Math.max(1,Math.round(c.rangeH*60/c.stepMin))}
+function activeSeries(c){return c.series.filter(s=>s.id&&s.id.trim())}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+// ---------- materialdesign graph template ----------
+function graphTemplate(c,s,i){
+  const cur=c.mode==='current';
+  const type=cur?'bar':s.type;
+  const hidden=s.axis==='none';
+  const ax=hidden?{}:(c.axes[s.axis]||{});
+  const unit=s.unit?' '+s.unit:'';
+  const aUnit=hidden?'':axisUnit(c,s.axis);
+  const hasLeft=c.series.some(x=>x.axis==='left');
+  const d=dec(s);
+  const axisId=hidden?10+i:(s.axis==='right'?1:0);
+  const g={type:type,legendText:labelOf(s),displayOrder:i,color:s.color,
+    yAxis_id:axisId,yAxis_position:hidden?'left':s.axis,yAxis_show:!hidden,yAxis_title_text:ax.title||'',
+    yAxis_appendix:aUnit?' '+aUnit:'',yAxis_gridLines_show:!hidden&&(s.axis==='left'||!hasLeft),
+    tooltip_AppendText:unit,tooltip_MinDigits:d,tooltip_MaxDigits:d,
+    datalabel_show:c.datalabels?'auto':false,datalabel_append:unit,datalabel_maxDigits:d};
+  if(!hidden&&c.axisColorMode==='custom'&&c.axisColor){g.yAxis_color=c.axisColor;g.yAxis_title_color=c.axisColor}
+  if(!hidden&&c.gridColor) g.yAxis_gridLines_color=c.gridColor;
+  if(ax.min!==''&&ax.min!=null&&isFinite(+ax.min)) g.yAxis_min=+ax.min;
+  if(ax.max!==''&&ax.max!=null&&isFinite(+ax.max)) g.yAxis_max=+ax.max;
+  if(type==='line'){
+    Object.assign(g,{line_Thickness:2,line_pointSize:0,line_pointSizeHover:4,line_UseFillColor:!!s.fill,line_FillColor:rgba(s.color,.18),line_Tension:s.smooth?0.35:0,line_steppedLine:!!s.stepped});
+  }else{
+    const stacked=cur||!!s.stack;
+    Object.assign(g,{barIsStacked:stacked,barStackId:stacked?axisId:100+i,barColorHover:s.color});
+  }
+  return g;
+}
+// Einheit einer Achse: fest eingetragen, sonst die erste Datenreihe auf dieser Achse mit Einheit
+function axisUnit(c,side){
+  const a=c.axes[side]||{};
+  if(a.unit&&String(a.unit).trim()) return String(a.unit).trim();
+  const s=c.series.find(x=>x.axis===side&&x.unit&&x.unit.trim());
+  return s?s.unit.trim():'';
+}
+
+// ---------- sample data for preview ----------
+function sampleRange(s,agg){
+  const k=(s.id+' '+s.label+' '+s.unit).toLowerCase();
+  if(agg==='delta'||/kwh|energ|verbrauch|zähler|zaehler|counter|m³|m3/.test(k)) return {lo:.4,hi:4,bars:true};
+  if(/temp|°c/.test(k)) return {lo:18,hi:24};
+  if(/humid|feucht|%/.test(k)) return {lo:42,hi:64};
+  if(/power|leistung|watt|\bw\b/.test(k)) return {lo:180,hi:2400};
+  if(/co2|ppm/.test(k)) return {lo:450,hi:1150};
+  if(/lux|hellig|bright|illum/.test(k)) return {lo:0,hi:800};
+  return {lo:20,hi:80};
+}
+function buildSample(c){
+  const ser=activeSeries(c).length?activeSeries(c):c.series.slice(0,1);
+  if(c.mode==='current'){
+    const axisLabels=ser.map(labelOf);
+    const graphs=ser.map((s,i)=>{const r=sampleRange(s,'');const rand=rng(hashStr(s.id||'x'));const v=round((r.lo+(r.hi-r.lo)*(.3+.5*rand()))*fac(s),dec(s));
+      return Object.assign(graphTemplate(c,s,i),{data:ser.map((x,j)=>j===i?v:null)})});
+    return {axisLabels,graphs};
+  }
+  const step=c.stepMin*60000, n=Math.min(pointCount(c),1500);
+  const tz=new Date().getTimezoneOffset()*60000;
+  const end=Math.ceil((Date.now()-tz)/step)*step+tz, start=end-n*step;
+  const axisLabels=[];for(let i=0;i<n;i++) axisLabels.push(fmt(start+i*step,c.labelFmt));
+  const graphs=ser.map((s,si)=>{
+    const r=sampleRange(s,c.aggregate), rand=rng(hashStr(s.id||'x')+si), mid=(r.lo+r.hi)/2, amp=(r.hi-r.lo)/2;
+    const data=[];
+    for(let i=0;i<n;i++){
+      const t=start+i*step, h=new Date(t).getHours()+new Date(t).getMinutes()/60;
+      let v=r.bars? r.lo+(r.hi-r.lo)*(.25+.75*rand()*(.5+.5*Math.sin((h-6)/24*2*Math.PI)))
+                  : mid+amp*.75*Math.sin((h-9)/24*2*Math.PI+si*.8)+amp*.18*(rand()-.5)*2;
+      data.push(round(v*fac(s),dec(s)));
+    }
+    return Object.assign(graphTemplate(c,s,si),{data});
+  });
+  return {axisLabels,graphs};
+}
+
+// ---------- preview ----------
+let chart=null;
+function tok(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function renderPreview(json){
+  if(typeof Chart==='undefined') return;
+  const muted=tok('--muted'), line=tok('--line'), ink=tok('--ink');
+  const anyRight=json.graphs.some(g=>g.yAxis_id===1);
+  const anyStack=json.graphs.some(g=>g.type==='bar'&&g.barIsStacked);
+  const datasets=json.graphs.map((g,i)=>{
+    const isLine=g.type==='line';
+    return {type:g.type,label:g.legendText,data:g.data,order:json.graphs.length-i,
+      borderColor:g.color,backgroundColor:isLine?(g.line_UseFillColor?g.line_FillColor:g.color):rgba(g.color,.8),
+      hoverBackgroundColor:g.color,fill:isLine&&g.line_UseFillColor?'origin':false,
+      tension:isLine?g.line_Tension:0,stepped:isLine&&g.line_steppedLine?'before':false,
+      pointRadius:isLine?(g.line_pointSize||0):0,pointHoverRadius:4,borderWidth:isLine?g.line_Thickness:0,
+      yAxisID:g.yAxis_id===0?'y':g.yAxis_id===1?'y1':'yh'+g.yAxis_id,stack:isLine?'l'+i:'s'+g.barStackId,spanGaps:false,
+      _unit:g.tooltip_AppendText||'',_digits:g.tooltip_MaxDigits,borderRadius:isLine?0:2};
+  });
+  const axis=(g)=>{
+    const tc=g?(g.yAxis_color||g.color):muted, gc=(g&&g.yAxis_gridLines_color)||line;
+    const o={beginAtZero:false,grid:{color:gc,drawOnChartArea:!!(g&&g.yAxis_gridLines_show)},border:{color:gc},ticks:{color:tc,font:{family:'IBM Plex Sans',size:11}},
+      title:{display:!!(g&&g.yAxis_title_text),text:g?g.yAxis_title_text:'',color:g?(g.yAxis_title_color||g.color):muted,font:{family:'IBM Plex Sans',size:12}}};
+    if(g&&g.yAxis_min!=null) o.min=g.yAxis_min; if(g&&g.yAxis_max!=null) o.max=g.yAxis_max;
+    if(g&&g.yAxis_appendix) o.ticks.callback=v=>v+g.yAxis_appendix;
+    return o;
+  };
+  const gl=json.graphs.find(g=>g.yAxis_id===0), gr=json.graphs.find(g=>g.yAxis_id===1);
+  const scales={
+    x:{stacked:anyStack,grid:{display:false},border:{color:line},ticks:{color:muted,autoSkip:true,maxTicksLimit:12,maxRotation:0,font:{family:'IBM Plex Sans',size:11}}},
+    y:Object.assign(axis(gl),{position:'left',stacked:anyStack,display:!!gl})
+  };
+  if(anyRight) scales.y1=Object.assign(axis(gr),{position:'right',stacked:anyStack});
+  json.graphs.filter(g=>g.yAxis_id>=10).forEach(g=>{scales['yh'+g.yAxis_id]=Object.assign(axis(g),{display:false,stacked:anyStack})});
+  const config={type:'bar',data:{labels:json.axisLabels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:ink,usePointStyle:true,pointStyle:'rectRounded',boxWidth:10,font:{family:'IBM Plex Sans',size:12}}},
+        tooltip:{filter:it=>it.raw!=null,callbacks:{label:it=>' '+it.dataset.label+': '+Number(it.raw).toLocaleString('de-DE',{minimumFractionDigits:it.dataset._digits,maximumFractionDigits:it.dataset._digits})+it.dataset._unit}}},
+      scales}};
+  if(chart) chart.destroy();
+  chart=new Chart($('#chart'),config);
+}
+
+// ---------- script generation ----------
+function q(s){return JSON.stringify(String(s))}
+function genScript(c){
+  const cur=c.mode==='current';
+  const ser=activeSeries(c);
+  const upd=UPDATES.find(u=>u[0]===c.updateMin)||UPDATES[1];
+  const cfgTxt=JSON.stringify(c,null,1).replace(/\*\//g,'* /');
+  const rangeLbl=(RANGES.find(r=>r[0]===c.rangeH)||[0,c.rangeH+' h'])[1];
+  const stepLbl=(STEPS.find(r=>r[0]===c.stepMin)||[0,c.stepMin+' min'])[1];
+  const seriesTxt=ser.map((s,i)=>{
+    const g=JSON.stringify(graphTemplate(c,s,i),null,4).replace(/\n/g,'\n        ');
+    return '    {\n        id: '+q(s.id.trim())+',\n        label: '+q(labelOf(s))+',\n        factor: '+fac(s)+',\n        decimals: '+dec(s)+',\n        graph: '+g+'\n    }';
+  }).join(',\n');
+  const L=[
+'// ============================================================',
+'// ioBroker Chart-Builder: '+c.name.replace(/[\r\n]/g,' '),
+'// Liefert JSON für das Materialdesign-Widget "JSON Chart".',
+'// Datenpunkt für das Widget: '+c.target,
+'// Erzeugt am '+new Date().toLocaleString('de-DE'),
+'// Änderungen im Chart-Builder vornehmen und dieses Skript ersetzen.',
+'// ============================================================',
+'',
+'/* CHART-BUILDER-CONFIG',
+cfgTxt,
+'CHART-BUILDER-CONFIG */',
+'',
+'const TARGET = '+q(c.target)+';'];
+  if(!cur) L.push(
+'const HISTORY = '+q(c.instance)+';',
+'const RANGE_MS = '+c.rangeH+' * 3600000;   // '+rangeLbl,
+'const STEP_MS = '+c.stepMin+' * 60000;      // '+stepLbl+' je Punkt',
+'const AGGREGATE = '+q(c.aggregate)+';',
+'const LABEL_FMT = '+q(c.labelFmt)+';',
+'const FILL_GAPS = '+!!c.fillGaps+';',
+'const ENABLE_LOG = '+!!c.enableLog+';');
+  L.push('','const SERIES = [',seriesTxt,'];','',
+'function round(v, digits) {',
+'    const f = Math.pow(10, digits);',
+'    return Math.round(v * f) / f;',
+'}','',
+'async function createTarget() {',
+'    await createStateAsync(TARGET, \'\', { name: '+q('Chart: '+c.name)+', type: \'string\', role: \'json\', read: true, write: false });',
+'}','');
+  if(cur){ L.push(
+'function update() {',
+'    const axisLabels = SERIES.map(s => s.label);',
+'    const graphs = SERIES.map((s, i) => {',
+'        const st = getState(s.id);',
+'        const n = st ? Number(st.val) : NaN;',
+'        const v = st && st.val !== null && isFinite(n) ? round(n * s.factor, s.decimals) : null;',
+'        return Object.assign({}, s.graph, { data: SERIES.map((x, j) => (j === i ? v : null)) });',
+'    });',
+'    setState(TARGET, JSON.stringify({ axisLabels: axisLabels, graphs: graphs }), true);',
+'}','',
+'let timer = null;',
+'on({ id: SERIES.map(s => s.id), change: \'ne\' }, () => {',
+'    if (timer) clearTimeout(timer);',
+'    timer = setTimeout(update, 500);',
+'});','',
+'createTarget().then(update);');
+  } else { L.push(
+'const DELTA = AGGREGATE === \'delta\';',
+'const WEEKDAYS = [\'So\', \'Mo\', \'Di\', \'Mi\', \'Do\', \'Fr\', \'Sa\'];','',
+'function fmt(ts, pattern) {',
+'    const d = new Date(ts);',
+'    const z = n => String(n).padStart(2, \'0\');',
+'    const parts = { yyyy: d.getFullYear(), ddd: WEEKDAYS[d.getDay()], dd: z(d.getDate()), MM: z(d.getMonth() + 1), HH: z(d.getHours()), mm: z(d.getMinutes()) };',
+'    return pattern.replace(/yyyy|ddd|dd|MM|HH|mm/g, t => parts[t]);',
+'}','',
+'function combine(values) {',
+'    if (AGGREGATE === \'max\' || DELTA) return Math.max(...values);',
+'    if (AGGREGATE === \'min\') return Math.min(...values);',
+'    const sum = values.reduce((a, b) => a + b, 0);',
+'    return AGGREGATE === \'total\' ? sum : sum / values.length;',
+'}','',
+'function sendToP(instance, command, message) {',
+'    return new Promise(resolve => {',
+'        const t = setTimeout(() => resolve({ error: \'keine Antwort von \' + instance }), 20000);',
+'        sendTo(instance, command, message, result => { clearTimeout(t); resolve(result); });',
+'    });',
+'}','',
+'async function ensureLogging(id) {',
+'    const obj = getObject(id);',
+'    if (!obj) {',
+'        log(\'Chart-Builder: Datenpunkt \' + id + \' existiert nicht\', \'warn\');',
+'        return;',
+'    }',
+'    const custom = obj.common && obj.common.custom && obj.common.custom[HISTORY];',
+'    if (custom && custom.enabled) return;',
+'    const res = await sendToP(HISTORY, \'enableHistory\', { id: id, options: { changesOnly: true } });',
+'    if (res && res.error) log(\'Chart-Builder: Logging für \' + id + \' nicht aktiviert: \' + res.error, \'warn\');',
+'    else log(\'Chart-Builder: Logging für \' + id + \' in \' + HISTORY + \' aktiviert\');',
+'}','',
+'async function update() {',
+'    const tz = new Date().getTimezoneOffset() * 60000;',
+'    const end = Math.ceil((Date.now() - tz) / STEP_MS) * STEP_MS + tz;',
+'    const start = end - RANGE_MS;',
+'    const count = Math.round(RANGE_MS / STEP_MS);',
+'    const base = DELTA ? start - STEP_MS : start;',
+'    const slots = count + (DELTA ? 1 : 0);',
+'',
+'    const axisLabels = [];',
+'    for (let i = 0; i < count; i++) axisLabels.push(fmt(start + i * STEP_MS, LABEL_FMT));',
+'',
+'    const graphs = [];',
+'    for (const s of SERIES) {',
+'        const res = await sendToP(HISTORY, \'getHistory\', {',
+'            id: s.id,',
+'            options: { start: base, end: end, aggregate: DELTA ? \'max\' : AGGREGATE, step: STEP_MS, ignoreNull: true, removeBorderValues: true }',
+'        });',
+'        if (!res || res.error) log(\'Chart-Builder: keine Historie für \' + s.id + (res && res.error ? \' (\' + res.error + \')\' : \'\'), \'warn\');',
+'',
+'        const buckets = Array.from({ length: slots }, () => []);',
+'        for (const row of (res && res.result) || []) {',
+'            const v = Number(row.val);',
+'            const i = Math.floor((row.ts - base) / STEP_MS);',
+'            if (row.val !== null && isFinite(v) && i >= 0 && i < slots) buckets[i].push(v);',
+'        }',
+'        let values = buckets.map(b => (b.length ? combine(b) : null));',
+'        if (DELTA) {',
+'            let prev = null;',
+'            values = values.map(v => (v === null ? prev : (prev = v)));',
+'            values = values.slice(1).map((v, i) => (v !== null && values[i] !== null && v >= values[i] ? v - values[i] : null));',
+'        }',
+'        let last = null;',
+'        const data = values.map(v => {',
+'            let out = v === null ? null : round(v * s.factor, s.decimals);',
+'            if (out === null && FILL_GAPS && !DELTA) out = last;',
+'            last = out;',
+'            return out;',
+'        });',
+'        graphs.push(Object.assign({}, s.graph, { data: data }));',
+'    }',
+'    setState(TARGET, JSON.stringify({ axisLabels: axisLabels, graphs: graphs }), true);',
+'}','',
+'async function safeUpdate() {',
+'    try {',
+'        await update();',
+'    } catch (e) {',
+'        log(\'Chart-Builder: \' + e, \'error\');',
+'    }',
+'}','',
+'schedule('+q(upd[2])+', safeUpdate);   // '+upd[1],
+'',
+'(async () => {',
+'    await createTarget();',
+'    if (ENABLE_LOG) for (const s of SERIES) await ensureLogging(s.id);',
+'    await safeUpdate();',
+'})();');
+  }
+  return L.join('\n')+'\n';
+}
+
+function warnings(c){
+  const w=[];
+  const ser=activeSeries(c);
+  if(!ser.length) w.push('Noch keine Datenpunkt-ID eingetragen. Das Skript enthält erst Datenreihen, wenn eine ID gesetzt ist.');
+  c.series.forEach((s,i)=>{ if(s.id&&!/^[^.\s]+\.\d+\.\S+$/.test(s.id.trim())) w.push('Datenreihe '+(i+1)+': „'+s.id+'“ sieht nicht wie eine ioBroker-ID aus (adapter.instanz.pfad).'); });
+  [['left','linken'],['right','rechten']].forEach(([side,name])=>{
+    const units=[...new Set(c.series.filter(s=>s.axis===side&&s.unit&&s.unit.trim()).map(s=>s.unit.trim()))];
+    if(units.length>1) w.push('Auf der '+name+' Achse liegen verschiedene Einheiten ('+units.join(', ')+'). Die Achse zeigt „'+axisUnit(c,side)+'“. Lege eine Reihe auf die andere Achse oder auf „keine (eigene Skala)“.');
+  });
+  if(!/^[\w-]+\.\d+\.\S+$/.test(c.target)) w.push('Der Ziel-Datenpunkt sollte mit 0_userdata.0. oder javascript.0. beginnen.');
+  if(c.mode==='history'){
+    const n=pointCount(c);
+    if(n>500) w.push(n+' Punkte pro Datenreihe sind viel für das Widget. Wähle ein größeres Intervall.');
+    if(c.stepMin>=c.rangeH*60) w.push('Das Intervall ist so groß wie der Zeitraum. Es entsteht nur ein Punkt.');
+    if(!/^[\w-]+\.\d+$/.test(c.instance)) w.push('History-Instanz „'+c.instance+'“ ist ungültig, z.B. history.0 oder influxdb.0.');
+    if(c.aggregate==='delta'&&ser.some(s=>s.type==='line')) w.push('Verbrauch aus Zählerstand wirkt meist als Balken besser.');
+  }
+  return w;
+}
+
+function renderHowto(c){
+  const cur=c.mode==='current';
+  const steps=[
+    online?'Auf <b>In ioBroker anlegen</b> klicken. Das Skript landet unter <code class="inline">script.js.ChartBuilder.'+esc(slug(c.name))+'</code> und wird bei einem erneuten Klick aktualisiert.'
+          :'Im ioBroker-Admin unter <b>Skripte</b> ein neues <b>JavaScript</b> anlegen, das kopierte Skript einfügen, speichern und starten.',
+    'Das Skript legt den Datenpunkt <code class="inline">'+esc(c.target)+'</code> an und füllt ihn '+(cur?'bei jeder Wertänderung':'nach dem gewählten Zeitplan')+'.',
+    'In vis das Widget <b>Materialdesign → JSON Chart</b> platzieren und bei <b>Object ID</b> den Datenpunkt oben eintragen.',
+    online?'Später Änderungen hier vornehmen und erneut auf <b>In ioBroker anlegen</b> klicken. Der Datenpunkt bleibt gleich, in vis musst du nichts anfassen.'
+          :'Später Änderungen hier vornehmen und das Skript im Editor ersetzen. Der Datenpunkt bleibt gleich, in vis musst du nichts anfassen.'
+  ];
+  if(!cur&&c.enableLog) steps.splice(2,0,'Wenn das Logging erst jetzt aktiviert wird, sammelt <code class="inline">'+esc(c.instance)+'</code> ab diesem Moment. Das Chart füllt sich also nach und nach.');
+  $('#howto').innerHTML=steps.map(s=>'<li>'+s+'</li>').join('');
+}
+
+// ---------- form binding ----------
+function fillSelect(sel,items){sel.innerHTML=items.map(it=>'<option value="'+it[0]+'">'+it[1]+'</option>').join('')}
+fillSelect($('#f-rangeH'),RANGES);fillSelect($('#f-stepMin'),STEPS);
+fillSelect($('#f-labelFmt'),FORMATS.map(f=>[f[0],f[1]+'  ('+f[0]+')']));
+fillSelect($('#f-aggregate'),AGGS);fillSelect($('#f-updateMin'),UPDATES);
+
+function getPath(o,p){return p.split('.').reduce((a,k)=>a==null?a:a[k],o)}
+function setPath(o,p,v){const ks=p.split('.');const last=ks.pop();ks.reduce((a,k)=>a[k],o)[last]=v}
+function writeForm(){
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    const v=getPath(cfg,el.dataset.k);
+    if(el.type==='checkbox') el.checked=!!v; else el.value=v==null?'':v;
+  });
+  const known=[...$('#f-instSel').options].some(o=>o.value&&o.value===cfg.instance);
+  $('#f-instSel').value=known?cfg.instance:'';
+  $('#f-mode-h').checked=cfg.mode==='history';$('#f-mode-c').checked=cfg.mode==='current';
+  renderSeries();
+}
+document.querySelectorAll('[data-k]').forEach(el=>{
+  el.addEventListener(el.tagName==='SELECT'||el.type==='checkbox'?'change':'input',()=>{
+    let v=el.type==='checkbox'?el.checked:el.value;
+    if('num' in el.dataset) v=Number(v);
+    setPath(cfg,el.dataset.k,v);
+    if(el.dataset.k==='target'){cfg.targetAuto=false;$('#f-targetAuto').checked=false}
+    if(el.dataset.k==='name'&&cfg.targetAuto){cfg.target='0_userdata.0.charts.'+slug(cfg.name);$('#f-target').value=cfg.target}
+    if(el.dataset.k==='targetAuto'&&v){cfg.target='0_userdata.0.charts.'+slug(cfg.name);$('#f-target').value=cfg.target}
+    markDirty();refresh();
+  });
+});
+$('#f-instSel').addEventListener('change',e=>{
+  if(e.target.value){cfg.instance=e.target.value;$('#f-instance').value=cfg.instance}
+  else{$('#f-instance').value='';cfg.instance='';setTimeout(()=>$('#f-instance').focus(),0)}
+  cfg.series.forEach((s,i)=>updateStatus(i));
+  markDirty();refresh();
+});
+document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',()=>{cfg.mode=r.value;renderSeries();markDirty();refresh()}));
+
+function renderSeries(){
+  const cur=cfg.mode==='current';
+  const box=$('#series');
+  box.innerHTML=cfg.series.map((s,i)=>{
+    const opt=(v,t,sel)=>'<option value="'+v+'"'+(sel===v?' selected':'')+'>'+t+'</option>';
+    const a=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    const lineOpts=!cur&&s.type==='line';
+    return '<div class="s-item" style="--c:'+a(s.color)+'" data-i="'+i+'">'+
+      '<div class="s-head"><input type="color" id="s'+i+'-color" data-f="color" value="'+a(s.color)+'" aria-label="Farbe">'+
+      '<input type="text" id="s'+i+'-label" data-f="label" value="'+a(s.label)+'" placeholder="Bezeichnung (Legende)">'+
+      '<button type="button" class="ghost" data-act="up" title="Nach oben"'+(i===0?' disabled':'')+'>↑</button>'+
+      '<button type="button" class="ghost" data-act="del" title="Entfernen" aria-label="Datenreihe entfernen">✕</button></div>'+
+      '<label class="field"><span>Datenpunkt-ID</span><input type="text" class="mono" id="s'+i+'-id" data-f="id" value="'+a(s.id)+'" placeholder="'+(online?'Tippen zum Suchen, z.B. wohnzimmer temp':'z.B. hm-rpc.0.ABC123.1.TEMPERATURE')+'" spellcheck="false" autocomplete="off"></label>'+
+      statusHtml(s,i)+
+      '<div class="row">'+
+        (cur?'':'<label class="field"><span>Darstellung</span><select id="s'+i+'-type" data-f="type">'+opt('line','Linie',s.type)+opt('bar','Balken',s.type)+'</select></label>')+
+        '<label class="field"><span>Y-Achse</span><select id="s'+i+'-axis" data-f="axis">'+opt('left','links',s.axis)+opt('right','rechts',s.axis)+opt('none','keine (eigene Skala)',s.axis)+'</select></label>'+
+        '<label class="field"><span>Einheit</span><input type="text" id="s'+i+'-unit" data-f="unit" value="'+a(s.unit)+'"></label>'+
+        '<label class="field"><span>Nachkommast.</span><input type="number" min="0" max="6" id="s'+i+'-decimals" data-f="decimals" value="'+a(s.decimals)+'"></label>'+
+        '<label class="field"><span>Faktor</span><input type="number" step="any" id="s'+i+'-factor" data-f="factor" value="'+a(s.factor)+'"></label>'+
+      '</div>'+
+      (cur?'':'<div class="checks">'+(lineOpts?
+        '<label><input type="checkbox" id="s'+i+'-fill" data-f="fill"'+(s.fill?' checked':'')+'> Fläche füllen</label>'+
+        '<label><input type="checkbox" id="s'+i+'-smooth" data-f="smooth"'+(s.smooth?' checked':'')+'> geglättet</label>'+
+        '<label><input type="checkbox" id="s'+i+'-stepped" data-f="stepped"'+(s.stepped?' checked':'')+'> Stufen (für Schaltzustände)</label>'
+        :'<label><input type="checkbox" id="s'+i+'-stack" data-f="stack"'+(s.stack?' checked':'')+'> mit anderen Balken stapeln</label>')+'</div>')+
+    '</div>';
+  }).join('');
+}
+$('#series').addEventListener('input',e=>{
+  const item=e.target.closest('.s-item'); if(!item||!e.target.dataset.f) return;
+  const s=cfg.series[+item.dataset.i], f=e.target.dataset.f;
+  if(e.target.type==='checkbox') return;
+  s[f]=e.target.value;
+  if(f==='color') item.style.setProperty('--c',s.color);
+  if(f==='id'){updateStatus(+item.dataset.i);showSuggest(e.target)}
+  markDirty();refresh();
+});
+$('#series').addEventListener('keydown',e=>{
+  if(sug.hidden||e.target!==sugInput) return;
+  const items=sug.querySelectorAll('[data-n]');
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();
+    sugIdx=(sugIdx+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;
+    items.forEach((d,k)=>d.setAttribute('aria-selected',k===sugIdx?'true':'false'));
+    items[sugIdx].scrollIntoView({block:'nearest'});
+  }else if(e.key==='Enter'&&sugIdx>=0){e.preventDefault();pickSuggest(sugIdx)}
+  else if(e.key==='Escape'){hideSuggest()}
+});
+$('#series').addEventListener('focusout',()=>setTimeout(()=>{if(!sug.contains(document.activeElement))hideSuggest()},150));
+$('#series').addEventListener('focusin',e=>{if(e.target.dataset&&e.target.dataset.f==='id'&&e.target.value)showSuggest(e.target)});
+$('#series').addEventListener('change',e=>{
+  const item=e.target.closest('.s-item'); if(!item||!e.target.dataset.f) return;
+  const s=cfg.series[+item.dataset.i], f=e.target.dataset.f;
+  s[f]=e.target.type==='checkbox'?e.target.checked:e.target.value;
+  if(f==='type') renderSeries();
+  markDirty();refresh();
+});
+$('#series').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  const i=+b.closest('.s-item').dataset.i;
+  if(b.dataset.act==='del'){cfg.series.splice(i,1);if(!cfg.series.length)cfg.series.push(newSeries(0))}
+  if(b.dataset.act==='up'&&i>0){const t=cfg.series[i];cfg.series[i]=cfg.series[i-1];cfg.series[i-1]=t}
+  renderSeries();markDirty();refresh();
+});
+$('#b-add').addEventListener('click',()=>{cfg.series.push(newSeries(cfg.series.length));renderSeries();markDirty();refresh();
+  const last=document.querySelector('.s-item:last-child input[data-f=id]');if(last)last.focus()});
+$('#b-bulk').addEventListener('click',()=>{
+  const ids=$('#f-bulk').value.split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
+  if(!ids.length) return;
+  cfg.series=cfg.series.filter(s=>s.id.trim());
+  ids.forEach(id=>cfg.series.push(newSeries(cfg.series.length,id)));
+  $('#f-bulk').value='';renderSeries();markDirty();refresh();
+});
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab);
+}));
+
+// ---------- copy ----------
+function flash(el,msg){el.textContent=msg;clearTimeout(el._t);el._t=setTimeout(()=>el.textContent='',2500)}
+$('#b-copy').addEventListener('click',()=>{
+  const txt=$('#code').textContent;
+  const fallback=()=>{const r=document.createRange();r.selectNodeContents($('#code'));const s=getSelection();s.removeAllRanges();s.addRange(r);flash($('#t-copy'),'Markiert. Mit Strg+C kopieren.')};
+  try{navigator.clipboard.writeText(txt).then(()=>flash($('#t-copy'),'Kopiert'),fallback)}catch(e){fallback()}
+});
+
+// ---------- saved charts ----------
+let dirty=false;
+function markDirty(){dirty=true;$('#p-saved').textContent='ungespeichert';$('#p-saved').classList.add('warn')}
+function savedAll(){return lsGet(KEY_SAVED)||{}}
+function renderSaved(sel){
+  const all=savedAll(), names=Object.keys(all).sort((a,b)=>a.localeCompare(b,'de'));
+  $('#f-savedList').innerHTML=names.length?names.map(n=>'<option'+(n===sel?' selected':'')+'>'+n.replace(/</g,'&lt;')+'</option>').join(''):'<option value="">(noch keine)</option>';
+}
+$('#b-save').addEventListener('click',()=>{
+  const all=savedAll();all[cfg.name]=JSON.parse(JSON.stringify(cfg));lsSet(KEY_SAVED,all);renderSaved(cfg.name);
+  dirty=false;$('#p-saved').textContent='gespeichert';$('#p-saved').classList.remove('warn');flash($('#t-saved'),'„'+cfg.name+'“ gespeichert');
+});
+$('#b-load').addEventListener('click',()=>{
+  const n=$('#f-savedList').value, all=savedAll(); if(!n||!all[n]) return;
+  cfg=normalize(all[n]);writeForm();refresh();dirty=false;$('#p-saved').textContent='gespeichert';$('#p-saved').classList.remove('warn');flash($('#t-saved'),'„'+n+'“ geladen');
+});
+$('#b-new').addEventListener('click',()=>{const inst=cfg.instance;cfg=blank();if(inst)cfg.instance=inst;writeForm();markDirty();refresh()});
+let delArmed=false;
+$('#b-del').addEventListener('click',()=>{
+  const n=$('#f-savedList').value; if(!n) return;
+  if(!delArmed){delArmed=true;$('#b-del').textContent='Wirklich löschen?';setTimeout(()=>{delArmed=false;$('#b-del').textContent='Löschen'},3000);return}
+  const all=savedAll();delete all[n];lsSet(KEY_SAVED,all);renderSaved();delArmed=false;$('#b-del').textContent='Löschen';flash($('#t-saved'),'„'+n+'“ gelöscht');
+});
+$('#b-import').addEventListener('click',()=>{
+  const t=$('#f-import').value;
+  const m=t.match(/CHART-BUILDER-CONFIG\s*([\s\S]*?)\s*CHART-BUILDER-CONFIG \*\//);
+  try{cfg=normalize(JSON.parse((m?m[1]:t).replace(/\* \//g,'*/')));writeForm();markDirty();refresh();$('#f-import').value='';flash($('#t-import'),'Eingelesen: „'+cfg.name+'“')}
+  catch(e){flash($('#t-import'),'Keine Chart-Builder-Konfiguration gefunden. Bitte das komplette Skript einfügen.')}
+});
+
+// ---------- refresh ----------
+let rt=null, refreshSeq=0;
+function refresh(){clearTimeout(rt);rt=setTimeout(doRefresh,online?350:90)}
+async function doRefresh(){
+  const seq=++refreshSeq;
+  const cur=cfg.mode==='current';
+  $('#x-panel').hidden=cur;$('#x-panel-cur').hidden=!cur;
+  $('#upd-field').hidden=cur;$('#log-check').hidden=cur;
+  $('#axc-field').hidden=cfg.axisColorMode!=='custom';
+  $('#inst-custom').hidden=cur||$('#f-instSel').value!=='';
+  $('#f-instSel').closest('.field').hidden=cur;
+  const n=pointCount(cfg);
+  $('#p-points').textContent=n+' Punkte';$('#p-points').classList.toggle('warn',n>500);
+  const act=activeSeries(cfg).length;
+  $('#p-series').textContent=act+' von '+cfg.series.length+' mit ID';$('#p-series').classList.toggle('warn',!act);
+  $('#code').textContent=genScript(cfg);
+  $('#warns').innerHTML=warnings(cfg).map(w=>'<li>'+w.replace(/</g,'&lt;')+'</li>').join('');
+  renderHowto(cfg);
+  lsSet(KEY_DRAFT,cfg);
+
+  let json=null, errMsg='';
+  if(online){ try{ json=await buildReal(cfg) }catch(e){ errMsg=(e&&e.message)||String(e) } }
+  if(seq!==refreshSeq) return;
+  const real=!!json;
+  if(!json) json=buildSample(cfg);
+  $('#p-data').textContent=real?'echte Daten aus '+(cfg.mode==='current'?'ioBroker':cfg.instance):'mit Beispieldaten';
+  $('#p-data').classList.toggle('warn',!!errMsg);
+  $('#data-err').hidden=!errMsg;
+  $('#data-err').textContent=errMsg?'Echte Daten konnten nicht geladen werden: '+errMsg+'. Die Vorschau zeigt Beispieldaten.':'';
+  $('#json-hint').textContent=real?'So sieht der Inhalt des Ziel-Datenpunkts mit deinen aktuellen Daten aus.':'So sieht der Inhalt des Ziel-Datenpunkts aus. Hier mit Beispieldaten, das Skript füllt echte Werte ein.';
+  renderPreview(json);
+  $('#json').textContent=JSON.stringify(json,null,2);
+}
+
+// ---------- ioBroker-Verbindung (nur wenn die Seite aus ioBroker geladen wird) ----------
+let socket=null, online=false, objLoaded=false, jsInstance='javascript.0', remoteCharts=[];
+const objCache={}, histCache=new Map();
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+function nameOf(n){if(n&&typeof n==='object') return n.de||n.en||Object.values(n)[0]||''; return n||''}
+function emit(){
+  const args=[...arguments];
+  return new Promise((resolve,reject)=>{
+    if(!socket) return reject(new Error('keine Verbindung'));
+    const t=setTimeout(()=>reject(new Error('keine Antwort von ioBroker')),20000);
+    socket.emit(...args,function(){clearTimeout(t);resolve([...arguments])});
+  });
+}
+function setConn(state){
+  const p=$('#p-conn');
+  const map={offline:['Offline · Beispieldaten',''],connecting:['Verbinde mit ioBroker …',''],online:['Verbunden mit ioBroker',''],lost:['Verbindung zu ioBroker getrennt','warn']};
+  p.textContent=map[state][0];p.classList.toggle('warn',map[state][1]==='warn');
+  online=state==='online';
+  $('#create-box').hidden=!online;$('#remote-box').hidden=!online;
+  $('#b-copy').classList.toggle('primary',!online);
+}
+function tryConnect(){
+  const local=/^https?:$/.test(location.protocol)&&!/claude|anthropic|usercontent/i.test(location.hostname);
+  if(!local) return setConn('offline');
+  setConn('connecting');
+  const sc=document.createElement('script');
+  sc.src='/lib/js/socket.io.js';
+  sc.onload=()=>{
+    try{socket=io.connect(location.protocol+'//'+location.host,{query:'key=nokey',reconnection:true})}catch(e){return setConn('offline')}
+    socket.on('connect',onConnect);
+    socket.on('disconnect',()=>setConn('lost'));
+  };
+  sc.onerror=()=>setConn('offline');
+  document.head.appendChild(sc);
+}
+async function onConnect(){
+  setConn('online');
+  try{await loadInstances()}catch(e){}
+  writeForm();refresh();
+  try{await loadObjects()}catch(e){}
+  renderSeries();
+  try{await loadRemoteCharts()}catch(e){}
+}
+async function loadInstances(){
+  const [err,res]=await emit('getObjectView','system','instance',{startkey:'system.adapter.',endkey:'system.adapter.香'});
+  if(err) throw new Error(err);
+  const hist=[], js=[];
+  ((res&&res.rows)||[]).forEach(r=>{
+    const id=r.id.replace('system.adapter.',''), c=(r.value&&r.value.common)||{};
+    if(c.getHistory||/^(history|influxdb|sql)\.\d+$/.test(id)) hist.push(id);
+    if(/^javascript\.\d+$/.test(id)) js.push(id);
+  });
+  if(js.length) jsInstance=js.sort()[0];
+  if(hist.length){
+    $('#f-instSel').innerHTML=hist.sort().map(h=>'<option value="'+esc(h)+'">'+esc(h)+'</option>').join('')+'<option value="">andere Instanz …</option>';
+    if(!hist.includes(cfg.instance)&&(cfg.instance===''||/^(history|influxdb|sql)\.\d+$/.test(cfg.instance))) cfg.instance=hist[0];
+  }
+}
+async function loadObjects(){
+  const [err,res]=await emit('getObjectView','system','state',{startkey:'',endkey:'香'});
+  if(err) throw new Error(err);
+  ((res&&res.rows)||[]).forEach(r=>{
+    const c=(r.value&&r.value.common)||{};
+    objCache[r.id]={name:nameOf(c.name),unit:c.unit||'',custom:c.custom||{},type:c.type||''};
+  });
+  objLoaded=true;
+}
+async function loadRemoteCharts(){
+  const [err,res]=await emit('getObjectView','script','javascript',{startkey:'script.js.ChartBuilder.',endkey:'script.js.ChartBuilder.香'});
+  if(err) throw new Error(err);
+  remoteCharts=((res&&res.rows)||[]).filter(r=>r.value&&r.value.common&&/CHART-BUILDER-CONFIG/.test(r.value.common.source||''));
+  $('#f-remoteList').innerHTML=remoteCharts.length
+    ?remoteCharts.map((r,k)=>'<option value="'+k+'">'+esc(r.id.replace('script.js.ChartBuilder.',''))+(r.value.common.enabled?'':' (gestoppt)')+'</option>').join('')
+    :'<option value="">(noch keine angelegt)</option>';
+}
+
+// Status unter der Datenpunkt-ID: gefunden? geloggt?
+function statusInfo(s){
+  if(!online||!objLoaded||!s.id||!s.id.trim()) return null;
+  const o=objCache[s.id.trim()];
+  if(!o) return {cls:'warn',txt:'Datenpunkt nicht gefunden'};
+  const name=o.name?o.name+' · ':'';
+  if(o.type&&o.type!=='number'&&o.type!=='boolean'&&o.type!=='mixed') return {cls:'warn',txt:name+'Typ „'+o.type+'“ – nur Zahlen lassen sich darstellen'};
+  if(cfg.mode==='current') return {cls:'ok',txt:name+(o.unit?'Einheit '+o.unit:'gefunden')};
+  const c=o.custom&&o.custom[cfg.instance];
+  if(c&&c.enabled) return {cls:'ok',txt:name+'wird in '+cfg.instance+' geloggt'};
+  return {cls:'warn',txt:name+'nicht in '+cfg.instance+' geloggt'+(cfg.enableLog?', das Skript schaltet das Logging ein':'')};
+}
+function statusHtml(s,i){const st=statusInfo(s);return '<div class="s-status '+(st?st.cls:'')+'" id="s'+i+'-status"'+(st?'':' hidden')+'>'+(st?esc(st.txt):'')+'</div>'}
+function updateStatus(i){const el=$('#s'+i+'-status');if(!el)return;const st=statusInfo(cfg.series[i]);el.hidden=!st;el.className='s-status '+(st?st.cls:'');el.textContent=st?st.txt:''}
+
+// Vorschlagsliste für Datenpunkt-IDs
+const sug=document.createElement('div');
+sug.className='suggest';sug.hidden=true;sug.setAttribute('role','listbox');
+document.body.appendChild(sug);
+let sugInput=null, sugItems=[], sugIdx=-1;
+function showSuggest(inp){
+  if(!objLoaded) return hideSuggest();
+  const terms=inp.value.toLowerCase().split(/\s+/).filter(Boolean);
+  if(!terms.length) return hideSuggest();
+  const out=[];
+  for(const id in objCache){
+    const hay=(id+' '+objCache[id].name).toLowerCase();
+    if(terms.every(t=>hay.includes(t))){out.push(id);if(out.length>=40)break}
+  }
+  if(!out.length||(out.length===1&&out[0]===inp.value.trim())) return hideSuggest();
+  sugInput=inp;sugItems=out;sugIdx=-1;
+  sug.innerHTML=out.map((id,k)=>{
+    const o=objCache[id], c=o.custom&&o.custom[cfg.instance];
+    return '<div role="option" data-n="'+k+'"><b>'+esc(id)+'</b><small>'+esc(o.name)+(o.unit?' · '+esc(o.unit):'')+(c&&c.enabled?' · geloggt':'')+'</small></div>';
+  }).join('');
+  const r=inp.getBoundingClientRect();
+  sug.style.left=(r.left+scrollX)+'px';sug.style.top=(r.bottom+scrollY+4)+'px';sug.style.width=r.width+'px';
+  sug.hidden=false;
+}
+function hideSuggest(){sug.hidden=true;sugInput=null;sugIdx=-1}
+function pickSuggest(k){
+  const id=sugItems[k], inp=sugInput; hideSuggest(); if(!inp||!id) return;
+  const s=cfg.series[+inp.closest('.s-item').dataset.i];
+  s.id=id;
+  const o=objCache[id];
+  if(o){ if(!s.label) s.label=o.name; if(!s.unit&&o.unit) s.unit=o.unit; }
+  renderSeries();markDirty();refresh();
+}
+sug.addEventListener('mousedown',e=>{const d=e.target.closest('[data-n]');if(d){e.preventDefault();pickSuggest(+d.dataset.n)}});
+
+// Echte Daten für die Vorschau – gleiche Rechnung wie im erzeugten Skript
+function seriesFromRows(rows,c,s,base,slots){
+  const step=c.stepMin*60000, DELTA=c.aggregate==='delta';
+  const buckets=Array.from({length:slots},()=>[]);
+  (rows||[]).forEach(r=>{const v=Number(r.val), i=Math.floor((r.ts-base)/step); if(r.val!==null&&isFinite(v)&&i>=0&&i<slots) buckets[i].push(v)});
+  const comb=b=>{
+    if(c.aggregate==='max'||DELTA) return Math.max(...b);
+    if(c.aggregate==='min') return Math.min(...b);
+    const sum=b.reduce((a,x)=>a+x,0); return c.aggregate==='total'?sum:sum/b.length;
+  };
+  let values=buckets.map(b=>b.length?comb(b):null);
+  if(DELTA){
+    let prev=null; values=values.map(v=>v===null?prev:(prev=v));
+    values=values.slice(1).map((v,i)=>v!==null&&values[i]!==null&&v>=values[i]?v-values[i]:null);
+  }
+  let last=null;
+  return values.map(v=>{let o=v===null?null:round(v*fac(s),dec(s)); if(o===null&&c.fillGaps&&!DELTA) o=last; last=o; return o});
+}
+async function buildReal(c){
+  const ser=activeSeries(c); if(!ser.length) return null;
+  if(c.mode==='current'){
+    const graphs=[];
+    for(let i=0;i<ser.length;i++){
+      const s=ser[i]; const [err,st]=await emit('getState',s.id.trim());
+      const n=st?Number(st.val):NaN, v=st&&st.val!==null&&isFinite(n)?round(n*fac(s),dec(s)):null;
+      graphs.push(Object.assign(graphTemplate(c,s,i),{data:ser.map((x,j)=>j===i?v:null)}));
+    }
+    return {axisLabels:ser.map(labelOf),graphs};
+  }
+  if(!/^[\w-]+\.\d+$/.test(c.instance)) throw new Error('History-Instanz fehlt');
+  const step=c.stepMin*60000, range=c.rangeH*3600000, count=Math.round(range/step);
+  if(count>1500) throw new Error('zu viele Punkte ('+count+')');
+  const tz=new Date().getTimezoneOffset()*60000;
+  const end=Math.ceil((Date.now()-tz)/step)*step+tz, start=end-range;
+  const DELTA=c.aggregate==='delta', base=DELTA?start-step:start, slots=count+(DELTA?1:0);
+  const axisLabels=[]; for(let i=0;i<count;i++) axisLabels.push(fmt(start+i*step,c.labelFmt));
+  const graphs=[];
+  for(let i=0;i<ser.length;i++){
+    const s=ser[i], id=s.id.trim();
+    const key=[c.instance,id,base,end,step,c.aggregate].join('|');
+    let rows=histCache.get(key);
+    if(!rows){
+      const [err,result]=await emit('getHistory',id,{instance:c.instance,start:base,end:end,aggregate:DELTA?'max':c.aggregate,step:step,ignoreNull:true,removeBorderValues:true});
+      if(err) throw new Error(id+': '+err);
+      rows=result||[];
+      if(histCache.size>200) histCache.clear();
+      histCache.set(key,rows);
+    }
+    graphs.push(Object.assign(graphTemplate(c,s,i),{data:seriesFromRows(rows,c,s,base,slots)}));
+  }
+  return {axisLabels,graphs};
+}
+
+// Skript direkt in ioBroker anlegen bzw. aktualisieren
+$('#b-create').addEventListener('click',async()=>{
+  const t=$('#t-create'); t.classList.remove('err');
+  if(!activeSeries(cfg).length){t.classList.add('err');t.textContent='Erst mindestens eine Datenpunkt-ID eintragen.';return}
+  const name=slug(cfg.name), folder='script.js.ChartBuilder', id=folder+'.'+name;
+  t.textContent='Lege Skript an …';
+  try{
+    const [e0,f]=await emit('getObject',folder);
+    if(!f){const [e1]=await emit('setObject',folder,{type:'channel',common:{name:'ChartBuilder'},native:{}});if(e1)throw new Error(e1)}
+    const [e2,old]=await emit('getObject',id);
+    const obj=old&&old.type==='script'?old:{_id:id,type:'script',common:{name:name,engineType:'Javascript/js',engine:'system.adapter.'+jsInstance,debug:false,verbose:false},native:{}};
+    obj.common.source=genScript(cfg);
+    obj.common.enabled=$('#f-autostart').checked;
+    const [e3]=await emit('setObject',id,obj);
+    if(e3) throw new Error(e3);
+    t.textContent=(old?'Aktualisiert: ':'Angelegt: ')+id+(obj.common.enabled?' (läuft)':' (gestoppt)');
+    const all=savedAll();all[cfg.name]=JSON.parse(JSON.stringify(cfg));lsSet(KEY_SAVED,all);renderSaved(cfg.name);
+    dirty=false;$('#p-saved').textContent='in ioBroker';$('#p-saved').classList.remove('warn');
+    loadRemoteCharts().catch(()=>{});
+  }catch(e){t.classList.add('err');t.textContent='Fehler: '+((e&&e.message)||e)+'. Tipp: Skript kopieren und im Skript-Editor einfügen.'}
+});
+$('#b-remoteLoad').addEventListener('click',()=>{
+  const r=remoteCharts[+$('#f-remoteList').value]; if(!r) return;
+  const m=(r.value.common.source||'').match(/CHART-BUILDER-CONFIG\s*([\s\S]*?)\s*CHART-BUILDER-CONFIG \*\//);
+  try{cfg=normalize(JSON.parse(m[1].replace(/\* \//g,'*/')));writeForm();refresh();dirty=false;$('#p-saved').textContent='in ioBroker';$('#p-saved').classList.remove('warn');flash($('#t-remote'),'„'+cfg.name+'“ geladen')}
+  catch(e){flash($('#t-remote'),'Konfiguration in diesem Skript ist nicht lesbar.')}
+});
+tryConnect();
+const mq=matchMedia('(prefers-color-scheme: dark)');
+if(mq.addEventListener) mq.addEventListener('change',refresh);
+new MutationObserver(refresh).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+writeForm();renderSaved();refresh();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(refresh);
+})();
+</script>
